@@ -302,10 +302,74 @@ const EmployeeSidePanel = ({
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Departamento</label>
-                                    <select name="department_id" className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all font-medium" value={editData.department_id || ''} onChange={handleInputChange}>
-                                        <option value="">Seleccione...</option>
-                                        {masters.departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                                    </select>
+                                    <div className="flex gap-2">
+                                        {!editData.showNewDeptInput ? (
+                                            <select
+                                                name="department_id"
+                                                className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all font-medium"
+                                                value={editData.department_id || ''}
+                                                onChange={(e) => {
+                                                    if (e.target.value === '__new__') {
+                                                        setEditData(prev => ({ ...prev, showNewDeptInput: true }));
+                                                    } else {
+                                                        handleInputChange(e);
+                                                    }
+                                                }}
+                                            >
+                                                <option value="">Seleccione...</option>
+                                                {masters.departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                                                <option value="__new__" className="font-bold text-blue-600">+ Crear Nuevo Departamento...</option>
+                                            </select>
+                                        ) : (
+                                            <div className="flex gap-2 w-full animate-fadeIn">
+                                                <input
+                                                    autoFocus
+                                                    placeholder="Nombre nuevo depto..."
+                                                    className="w-full border border-blue-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-100"
+                                                    value={editData.newDeptName || ''}
+                                                    onChange={(e) => setEditData(prev => ({ ...prev, newDeptName: e.target.value }))}
+                                                    onKeyDown={async (e) => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            if (!editData.newDeptName?.trim()) return;
+                                                            try {
+                                                                const { data, error } = await supabase.from('rrhh_departamentos').insert({ name: editData.newDeptName.trim() }).select().single();
+                                                                if (error) throw error;
+                                                                // Actualizar lista local (hack rápido, idealmente pasar función setMasters desde padre)
+                                                                masters.departments.push(data);
+                                                                setEditData(prev => ({ ...prev, department_id: data.id, showNewDeptInput: false, newDeptName: '' }));
+                                                            } catch (err) { alert(err.message); }
+                                                        }
+                                                        if (e.key === 'Escape') setEditData(prev => ({ ...prev, showNewDeptInput: false, newDeptName: '' }));
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={async () => {
+                                                        if (!editData.newDeptName?.trim()) return;
+                                                        try {
+                                                            const { data, error } = await supabase.from('rrhh_departamentos').insert({ name: editData.newDeptName.trim() }).select().single();
+                                                            if (error) throw error;
+                                                            masters.departments.push(data);
+                                                            setEditData(prev => ({ ...prev, department_id: data.id, showNewDeptInput: false, newDeptName: '' }));
+                                                        } catch (err) { alert(err.message); }
+                                                    }}
+                                                    className="bg-blue-600 text-white px-3 rounded-lg hover:bg-blue-700"
+                                                    title="Guardar"
+                                                >
+                                                    ✓
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setEditData(prev => ({ ...prev, showNewDeptInput: false, newDeptName: '' }))}
+                                                    className="text-slate-400 hover:text-slate-600 px-2"
+                                                    title="Cancelar"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Sueldo Base (CLP)</label>
@@ -324,10 +388,88 @@ const EmployeeSidePanel = ({
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Turno Asignado</label>
-                                    <select name="shift_id" className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all font-medium" value={editData.shift_id || ''} onChange={handleInputChange}>
-                                        <option value="">-- Sin Turno --</option>
-                                        {masters.shifts.map(s => <option key={s.id} value={s.id}>{s.name} ({s.start_time.slice(0, 5)}-{s.end_time.slice(0, 5)})</option>)}
-                                    </select>
+                                    <div className="flex gap-2">
+                                        {!editData.showNewShiftInput ? (
+                                            <select
+                                                name="shift_id"
+                                                className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all font-medium"
+                                                value={editData.shift_id || ''}
+                                                onChange={(e) => {
+                                                    if (e.target.value === '__new__') {
+                                                        setEditData(prev => ({ ...prev, showNewShiftInput: true }));
+                                                    } else {
+                                                        handleInputChange(e);
+                                                    }
+                                                }}
+                                            >
+                                                <option value="">-- Sin Turno --</option>
+                                                {masters.shifts.map(s => <option key={s.id} value={s.id}>{s.name} ({s.start_time.slice(0, 5)}-{s.end_time.slice(0, 5)})</option>)}
+                                                <option value="__new__" className="font-bold text-blue-600">+ Crear Nuevo Turno...</option>
+                                            </select>
+                                        ) : (
+                                            <div className="flex gap-2 w-full animate-fadeIn">
+                                                <input
+                                                    autoFocus
+                                                    placeholder="Nombre Turno (ej: Administrativo)"
+                                                    className="w-full border border-blue-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-100"
+                                                    value={editData.newShiftName || ''}
+                                                    onChange={(e) => setEditData(prev => ({ ...prev, newShiftName: e.target.value }))}
+                                                    onKeyDown={async (e) => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            if (!editData.newShiftName?.trim()) return;
+                                                            try {
+                                                                // Crear turno con defaults (8:30-18:30, Lun-Vie)
+                                                                const payload = {
+                                                                    name: editData.newShiftName.trim(),
+                                                                    start_time: '08:30',
+                                                                    end_time: '18:30',
+                                                                    break_minutes: 60,
+                                                                    work_days: [1, 2, 3, 4, 5]
+                                                                };
+                                                                const { data, error } = await supabase.from('rrhh_turnos').insert(payload).select().single();
+                                                                if (error) throw error;
+                                                                masters.shifts.push(data);
+                                                                setEditData(prev => ({ ...prev, shift_id: data.id, showNewShiftInput: false, newShiftName: '' }));
+                                                            } catch (err) { alert(err.message); }
+                                                        }
+                                                        if (e.key === 'Escape') setEditData(prev => ({ ...prev, showNewShiftInput: false, newShiftName: '' }));
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={async () => {
+                                                        if (!editData.newShiftName?.trim()) return;
+                                                        try {
+                                                            const payload = {
+                                                                name: editData.newShiftName.trim(),
+                                                                start_time: '08:30',
+                                                                end_time: '18:30',
+                                                                break_minutes: 60,
+                                                                work_days: [1, 2, 3, 4, 5]
+                                                            };
+                                                            const { data, error } = await supabase.from('rrhh_turnos').insert(payload).select().single();
+                                                            if (error) throw error;
+                                                            masters.shifts.push(data);
+                                                            setEditData(prev => ({ ...prev, shift_id: data.id, showNewShiftInput: false, newShiftName: '' }));
+                                                        } catch (err) { alert(err.message); }
+                                                    }}
+                                                    className="bg-blue-600 text-white px-3 rounded-lg hover:bg-blue-700"
+                                                    title="Guardar"
+                                                >
+                                                    ✓
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setEditData(prev => ({ ...prev, showNewShiftInput: false, newShiftName: '' }))}
+                                                    className="text-slate-400 hover:text-slate-600 px-2"
+                                                    title="Cancelar"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                                 {/* Supervisor - Full Width */}
                                 <div className="col-span-full pt-4 border-t border-dashed border-slate-200">

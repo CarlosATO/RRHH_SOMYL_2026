@@ -4,6 +4,7 @@ import Layout from './components/layout/Layout'
 import Dashboard from './pages/Dashboard'
 import EmployeeList from './pages/EmployeeList'
 import JobSettings from './pages/JobSettings'
+import DepartmentSettings from './pages/DepartmentSettings'
 import AbsenceManagement from './pages/AbsenceManagement'
 import BalanceSettings from './pages/BalanceSettings'
 import SubcontractorSettings from './pages/SubcontractorSettings'
@@ -48,6 +49,7 @@ function App() {
 
             {/* Configuraciones */}
             <Route path="/settings/jobs" element={<Layout><JobSettings /></Layout>} />
+            <Route path="/settings/departments" element={<Layout><DepartmentSettings /></Layout>} />
             <Route path="/settings/shifts" element={<Layout><ShiftSettings /></Layout>} />
             <Route path="/settings/subcontractors" element={<Layout><SubcontractorSettings /></Layout>} />
             <Route path="/settings/courses" element={<Layout><CourseSettings /></Layout>} />
