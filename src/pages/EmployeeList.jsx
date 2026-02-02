@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { usePendingRequests } from '../hooks/usePendingRequests';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import EmployeeEPP from '../components/EmployeeEPP';
 
 const PORTAL_URL = import.meta.env.VITE_PORTAL_URL;
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -222,7 +223,7 @@ const EmployeeSidePanel = ({
                 {/* TABS FIJAS */}
                 <div className="flex-none bg-slate-50 border-b overflow-x-auto">
                     <div className="flex px-6 space-x-6">
-                        {['personal', 'contract', 'social', 'acred', 'files'].map(tab => (
+                        {['personal', 'contract', 'social', 'acred', 'files', 'epp'].map(tab => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
@@ -236,6 +237,7 @@ const EmployeeSidePanel = ({
                                 {tab === 'social' && 'Previsión y Salud'}
                                 {tab === 'acred' && 'Acreditaciones'}
                                 {tab === 'files' && 'Carpeta Digital'}
+                                {tab === 'epp' && 'Dotación / EPP'}
                             </button>
                         ))}
                     </div>
@@ -590,6 +592,11 @@ const EmployeeSidePanel = ({
                     {activeTab === 'files' && (
                         <div className="animate-fadeIn">
                             {!isNew ? <EmployeeDocuments employeeId={currentEmployee.id} /> : <div className="text-center p-12 bg-slate-50 rounded-lg border border-dashed border-slate-300 text-slate-500">Guarde el empleado para subir documentos.</div>}
+                        </div>
+                    )}
+                    {activeTab === 'epp' && (
+                        <div className="animate-fadeIn">
+                            {!isNew ? <EmployeeEPP employeeId={currentEmployee.id} /> : <div className="text-center p-12 bg-slate-50 rounded-lg border border-dashed border-slate-300 text-slate-500">Guarde el empleado para gestionar dotación.</div>}
                         </div>
                     )}
                 </div>
