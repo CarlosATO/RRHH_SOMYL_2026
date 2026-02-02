@@ -452,7 +452,7 @@ const EmployeeList = () => {
                 supabase.from('rrhh_contract_types').select('*'),
                 supabase.from('rrhh_subcontractors').select('*'),
                 supabase.from('rrhh_course_catalog').select('*'),
-                supabase.from('rrhh_shifts').select('*')
+                supabase.from('rrhh_turnos').select('*')
             ]);
 
             const getData = (res) => (res.status === 'fulfilled' && res.value.data) ? res.value.data : [];

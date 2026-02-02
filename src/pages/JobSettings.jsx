@@ -19,7 +19,7 @@ const JobSettings = () => {
       setLoading(true);
       // RLS (Row Level Security) nos protege, pero el eq() es más rápido
       const { data, error } = await supabase
-        .from('rrhh_jobs')
+        .from('rrhh_cargos')
         .select('*')
         .order('name', { ascending: true });
 
@@ -46,7 +46,7 @@ const JobSettings = () => {
 
     try {
       const { error } = await supabase
-        .from('rrhh_jobs')
+        .from('rrhh_cargos')
         .insert({
           name: newJobName.trim(),
         });
@@ -71,7 +71,7 @@ const JobSettings = () => {
     try {
       // RLS nos protege, el usuario solo puede borrar los de su empresa.
       const { error } = await supabase
-        .from('rrhh_jobs')
+        .from('rrhh_cargos')
         .delete()
         .eq('id', jobId);
 

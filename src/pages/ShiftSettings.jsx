@@ -17,7 +17,7 @@ const ShiftSettings = () => {
       // const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user.id).single();
       // if (profile?.organization_id) {
       // setOrganizationId(profile.organization_id);
-      const { data } = await supabase.from('rrhh_shifts').select('*').order('name');
+      const { data } = await supabase.from('rrhh_turnos').select('*').order('name');
       setShifts(data || []);
       // }
     } catch (error) { console.error(error); } finally { setLoading(false); }
@@ -28,7 +28,7 @@ const ShiftSettings = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     try {
-      const { error } = await supabase.from('rrhh_shifts').insert({
+      const { error } = await supabase.from('rrhh_turnos').insert({
         ...newShift
       });
       if (error) throw error;
@@ -40,7 +40,7 @@ const ShiftSettings = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("¿Borrar turno?")) return;
     try {
-      await supabase.from('rrhh_shifts').delete().eq('id', id);
+      await supabase.from('rrhh_turnos').delete().eq('id', id);
       fetchData();
     } catch (error) { alert("Error al eliminar."); }
   };
