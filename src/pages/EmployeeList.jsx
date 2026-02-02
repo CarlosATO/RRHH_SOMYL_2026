@@ -15,6 +15,17 @@ const cleanRut = (value) => {
     return value.replace(/\./g, '').trim().toLowerCase();
 }
 
+const NATIONALITIES = [
+    'Chilena', 'Venezolana', 'Colombiana', 'Peruana', 'Haitiana',
+    'Boliviana', 'Argentina', 'Ecuatoriana', 'Brasileña', 'Otra'
+];
+
+const formatCLP = (value) => {
+    if (!value) return '';
+    const number = parseInt(value.toString().replace(/\D/g, ''), 10);
+    return isNaN(number) ? '' : new Intl.NumberFormat('es-CL').format(number);
+};
+
 // --- FUNCIÓN HELPER: CREAR USUARIO AUTH ---
 const createWorkerAuth = async (rut, pin, name) => {
     const tempClient = createSupabaseClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -177,6 +188,11 @@ const EmployeeSidePanel = ({
         setEditData(prev => ({ ...prev, [name]: finalValue }));
     };
 
+    const handleSalaryChange = (e) => {
+        const rawValue = e.target.value.replace(/\D/g, '');
+        setEditData(prev => ({ ...prev, salary: rawValue }));
+    };
+
     const previewUrl = editData.photo_file ? URL.createObjectURL(editData.photo_file) : editData.photo_url;
 
     return (
@@ -265,7 +281,14 @@ const EmployeeSidePanel = ({
                             </div>
                             <div className="space-y-1">
                                 <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Nacionalidad</label>
-                                <input name="nationality" className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all font-medium" placeholder="Chilena" value={editData.nationality || 'Chilena'} onChange={handleInputChange} />
+                                <select
+                                    name="nationality"
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all font-medium"
+                                    value={editData.nationality || 'Chilena'}
+                                    onChange={handleInputChange}
+                                >
+                                    {NATIONALITIES.map(n => <option key={n} value={n}>{n}</option>)}
+                                </select>
                             </div>
                             <div className="space-y-1">
                                 <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Fecha Nacimiento</label>
@@ -381,7 +404,14 @@ const EmployeeSidePanel = ({
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Sueldo Base (CLP)</label>
-                                    <input name="salary" type="number" className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all font-medium" value={editData.salary || ''} onChange={handleInputChange} />
+                                    <input
+                                        name="salary"
+                                        type="text"
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all font-medium font-mono"
+                                        placeholder="$ 0"
+                                        value={formatCLP(editData.salary)}
+                                        onChange={handleSalaryChange}
+                                    />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Fecha Ingreso</label>
