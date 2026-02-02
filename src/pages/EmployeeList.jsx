@@ -263,6 +263,14 @@ const EmployeeSidePanel = ({
                                     {masters.maritalStatus.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                 </select>
                             </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Nacionalidad</label>
+                                <input name="nationality" className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all font-medium" placeholder="Chilena" value={editData.nationality || 'Chilena'} onChange={handleInputChange} />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Fecha Nacimiento</label>
+                                <input name="birth_date" type="date" className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all font-medium" value={editData.birth_date || ''} onChange={handleInputChange} />
+                            </div>
                             <div className="col-span-full space-y-1">
                                 <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Dirección Particular</label>
                                 <input name="address" className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all font-medium" placeholder="Calle, Número, Comuna" value={editData.address || ''} onChange={handleInputChange} />
@@ -378,6 +386,10 @@ const EmployeeSidePanel = ({
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Fecha Ingreso</label>
                                     <input name="hire_date" type="date" className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all font-medium" value={editData.hire_date || ''} onChange={handleInputChange} />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Fecha Término (Opcional)</label>
+                                    <input name="termination_date" type="date" className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all font-medium" value={editData.termination_date || ''} onChange={handleInputChange} />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Tipo Contrato</label>
@@ -654,8 +666,11 @@ const EmployeeList = () => {
 
             const payload = {
                 first_name: editData.first_name, last_name: editData.last_name, rut: cleanRut(editData.rut),
+                nationality: editData.nationality || 'Chilena',
+                birth_date: editData.birth_date || null,
                 job_id: editData.job_id, department_id: editData.department_id,
                 salary: editData.salary, hire_date: editData.hire_date,
+                termination_date: editData.termination_date || null,
                 contract_type_id: editData.contract_type_id,
                 marital_status_id: editData.marital_status_id, address: editData.address,
                 pension_provider_id: editData.pension_provider_id, health_provider_id: editData.health_provider_id,
