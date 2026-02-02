@@ -206,7 +206,7 @@ const EmployeeSidePanel = ({
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-end" onClick={handleClose}>
             <div
-                className="w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out"
+                className="w-full max-w-7xl bg-white h-full shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out"
                 onClick={e => e.stopPropagation()}
             >
                 {/* HEADER FIJO */}

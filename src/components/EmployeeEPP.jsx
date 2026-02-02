@@ -103,6 +103,20 @@ const EmployeeEPP = ({ employeeId }) => {
         }
     };
 
+    const deleteRequest = async (id) => {
+        if (!confirm('¿Seguro que deseas eliminar esta solicitud pendiente?')) return;
+        setLoading(true);
+        try {
+            const { error } = await supabase.from('material_requests').delete().eq('id', id);
+            if (error) throw error;
+            fetchRequests();
+        } catch (err) {
+            alert('Error al eliminar: ' + err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const getStatusBadge = (status) => {
         const styles = {
             'PENDING': 'bg-yellow-100 text-yellow-800',
@@ -289,6 +303,7 @@ const EmployeeEPP = ({ employeeId }) => {
                                 <th className="p-3">Item</th>
                                 <th className="p-3 text-center">Cant.</th>
                                 <th className="p-3">Estado</th>
+                                <th className="p-3 text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-orange-100">
@@ -301,6 +316,15 @@ const EmployeeEPP = ({ employeeId }) => {
                                     </td>
                                     <td className="p-3 text-center font-mono font-bold">{req.quantity}</td>
                                     <td className="p-3">{getStatusBadge(req.status)}</td>
+                                    <td className="p-3 text-right">
+                                        <button
+                                            onClick={() => deleteRequest(req.id)}
+                                            className="p-2 text-red-500 hover:bg-red-100 rounded-full transition-colors"
+                                            title="Eliminar Solicitud"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </td>
                                 </tr>
                             )) : (
                                 <tr>
