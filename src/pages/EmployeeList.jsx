@@ -554,7 +554,7 @@ const EmployeeSidePanel = ({
                                         <label className="text-xs font-bold text-orange-800 uppercase block mb-1 tracking-wide">Empresa Contratista</label>
                                         <select name="subcontractor_id" className="w-full bg-white border border-orange-300 rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-orange-200 focus:border-orange-500 transition-all" value={editData.subcontractor_id || ''} onChange={handleInputChange}>
                                             <option value="">-- Seleccionar --</option>
-                                            {masters.subcontractors.map(sub => <option key={sub.id} value={sub.id}>{sub.business_name}</option>)}
+                                            {masters.subcontractors.map(sub => <option key={sub.id} value={sub.id}>{sub.nombre}</option>)}
                                         </select>
                                     </div>
                                 )}
@@ -640,7 +640,7 @@ const EmployeeList = () => {
                 supabase.from('rrhh_pension_providers').select('*'),
                 supabase.from('rrhh_health_providers').select('*'),
                 supabase.from('rrhh_contract_types').select('*'),
-                supabase.from('rrhh_subcontractors').select('*'),
+                supabase.from('proveedores').select('*').eq('subcontrato', 1),
                 supabase.from('rrhh_course_catalog').select('*'),
                 supabase.from('rrhh_turnos').select('*')
             ]);

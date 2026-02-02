@@ -18,11 +18,12 @@ const SubcontractorSettings = () => {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      // 2. Obtener Subcontratistas
+      // 2. Obtener Subcontratistas desde Proveedores (subcontrato = 1)
       const { data, error } = await supabase
-        .from('rrhh_subcontractors')
+        .from('proveedores')
         .select('*')
-        .order('business_name', { ascending: true });
+        .eq('subcontrato', 1)
+        .order('nombre', { ascending: true });
 
       if (error) throw error;
       setSubs(data || []);
@@ -42,16 +43,18 @@ const SubcontractorSettings = () => {
     e.preventDefault();
 
     try {
-      const { error } = await supabase.from('rrhh_subcontractors').insert({
+      // Insertar en tabla proveedores con subcontrato = 1
+      const { error } = await supabase.from('proveedores').insert({
         rut: formData.rut,
-        business_name: formData.business_name,
-        legal_representative: formData.legal_representative,
-        contact_email: formData.contact_email
+        nombre: formData.business_name, // Mapeo: business_name -> nombre
+        contacto: formData.legal_representative, // Mapeo: legal_representative -> contacto
+        correo: formData.contact_email, // Mapeo: contact_email -> correo
+        subcontrato: 1
       });
 
       if (error) throw error;
 
-      alert('Empresa contratista agregada correctamente.');
+      alert('Empresa contratista agregada correctamente a Proveedores.');
       setFormData({ rut: '', business_name: '', legal_representative: '', contact_email: '' });
       setShowForm(false);
       fetchData();
@@ -63,14 +66,15 @@ const SubcontractorSettings = () => {
 
   // --- Eliminar (Soft Delete o Hard Delete según prefieras) ---
   const handleDelete = async (id) => {
-    if (!window.confirm("¿Eliminar esta empresa? Esto podría afectar a empleados vinculados.")) return;
+    if (!window.confirm("¿Quitar marca de subcontrato? El proveedor seguirá existiendo pero no aparecerá aquí.")) return;
 
     try {
-      const { error } = await supabase.from('rrhh_subcontractors').delete().eq('id', id);
+      // Solo quitamos la marca de subcontrato, no borramos el proveedor
+      const { error } = await supabase.from('proveedores').update({ subcontrato: 0 }).eq('id', id);
       if (error) throw error;
       fetchData();
     } catch (error) {
-      alert("No se puede eliminar: Probablemente tiene empleados asociados.");
+      alert("Error al eliminar: " + error.message);
     }
   };
 
@@ -84,7 +88,7 @@ const SubcontractorSettings = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h2 className="text-3xl font-bold text-slate-900">Empresas Contratistas</h2>
-            <p className="text-slate-500 mt-1">Gestión de empresas externas y subcontratos.</p>
+            <p className="text-slate-500 mt-1">Gestión de proveedores marcados como subcontratistas.</p>
           </div>
           <div className="flex gap-3">
             <button onClick={() => navigate('/')} className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-100 font-medium">
@@ -112,7 +116,7 @@ const SubcontractorSettings = () => {
                   value={formData.business_name} onChange={e => setFormData({ ...formData, business_name: e.target.value })} />
               </div>
               <div>
-                <label className="block text-sm text-slate-700 mb-1">Representante Legal</label>
+                <label className="block text-sm text-slate-700 mb-1">Contacto / Rep. Legal</label>
                 <input className="w-full border p-2 rounded" placeholder="Nombre Completo"
                   value={formData.legal_representative} onChange={e => setFormData({ ...formData, legal_representative: e.target.value })} />
               </div>
@@ -147,15 +151,15 @@ const SubcontractorSettings = () => {
               ) : (
                 subs.map(sub => (
                   <tr key={sub.id} className="hover:bg-slate-50">
-                    <td className="p-4 font-medium text-slate-900">{sub.business_name}</td>
+                    <td className="p-4 font-medium text-slate-900">{sub.nombre}</td>
                     <td className="p-4 text-slate-600">{sub.rut}</td>
                     <td className="p-4 text-slate-600 text-sm">
-                      {sub.legal_representative}<br />
-                      <span className="text-slate-400">{sub.contact_email}</span>
+                      {sub.contacto}<br />
+                      <span className="text-slate-400">{sub.correo}</span>
                     </td>
                     <td className="p-4 text-right">
                       <button onClick={() => handleDelete(sub.id)} className="text-red-500 hover:text-red-700 text-sm font-medium">
-                        Eliminar
+                        Quitar
                       </button>
                     </td>
                   </tr>
