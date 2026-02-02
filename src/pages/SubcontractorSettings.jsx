@@ -9,10 +9,6 @@ const SubcontractorSettings = () => {
   const navigate = useNavigate();
   const [subs, setSubs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
-    rut: '', business_name: '', legal_representative: '', contact_email: ''
-  });
 
   // --- Carga de Datos ---
   const fetchData = useCallback(async () => {
@@ -38,32 +34,6 @@ const SubcontractorSettings = () => {
     if (user) fetchData();
   }, [user, fetchData]);
 
-  // --- Guardar Nuevo Subcontratista ---
-  const handleSave = async (e) => {
-    e.preventDefault();
-
-    try {
-      // Insertar en tabla proveedores (DB Externa)
-      const { error } = await procurementClient.from('proveedores').insert({
-        rut: formData.rut,
-        nombre: formData.business_name,
-        contacto: formData.legal_representative,
-        correo: formData.contact_email,
-        subcontrato: 1
-      });
-
-      if (error) throw error;
-
-      alert('Empresa contratista agregada correctamente a Proveedores.');
-      setFormData({ rut: '', business_name: '', legal_representative: '', contact_email: '' });
-      setShowForm(false);
-      fetchData();
-
-    } catch (error) {
-      alert('Error al guardar: ' + error.message);
-    }
-  };
-
   // --- Eliminar (Soft Delete o Hard Delete según prefieras) ---
   const handleDelete = async (id) => {
     if (!window.confirm("¿Quitar marca de subcontrato? El proveedor seguirá existiendo pero no aparecerá aquí.")) return;
@@ -88,51 +58,17 @@ const SubcontractorSettings = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h2 className="text-3xl font-bold text-slate-900">Empresas Contratistas</h2>
-            <p className="text-slate-500 mt-1">Gestión de proveedores marcados como subcontratistas.</p>
+            <p className="text-slate-500 mt-1">
+              Visualización de proveedores activos como subcontratistas.
+              <span className="block text-xs text-orange-600 font-medium mt-1">⚠ La creación y edición se realiza en el módulo de Adquisiciones.</span>
+            </p>
           </div>
           <div className="flex gap-3">
             <button onClick={() => navigate('/')} className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-100 font-medium">
               ⬅ Volver
             </button>
-            <button onClick={() => setShowForm(!showForm)} className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium shadow-sm">
-              {showForm ? 'Cancelar' : '+ Nueva Empresa'}
-            </button>
           </div>
         </div>
-
-        {/* Formulario */}
-        {showForm && (
-          <div className="bg-white p-6 rounded-xl shadow-md mb-8 border border-slate-200 animate-fade-in">
-            <h3 className="font-bold text-lg mb-4 text-slate-800">Datos de la Empresa Externa</h3>
-            <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-slate-700 mb-1">RUT Empresa</label>
-                <input required className="w-full border p-2 rounded" placeholder="76.xxx.xxx-x"
-                  value={formData.rut} onChange={e => setFormData({ ...formData, rut: e.target.value })} />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-700 mb-1">Razón Social</label>
-                <input required className="w-full border p-2 rounded" placeholder="Constructora Ejemplo SpA"
-                  value={formData.business_name} onChange={e => setFormData({ ...formData, business_name: e.target.value })} />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-700 mb-1">Contacto / Rep. Legal</label>
-                <input className="w-full border p-2 rounded" placeholder="Nombre Completo"
-                  value={formData.legal_representative} onChange={e => setFormData({ ...formData, legal_representative: e.target.value })} />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-700 mb-1">Email Contacto</label>
-                <input type="email" className="w-full border p-2 rounded" placeholder="contacto@empresa.cl"
-                  value={formData.contact_email} onChange={e => setFormData({ ...formData, contact_email: e.target.value })} />
-              </div>
-              <div className="md:col-span-2 pt-2">
-                <button type="submit" className="w-full bg-slate-900 text-white p-2 rounded hover:bg-slate-800 font-medium">
-                  Guardar Contratista
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
 
         {/* Tabla */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
