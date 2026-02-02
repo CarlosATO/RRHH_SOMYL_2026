@@ -184,7 +184,13 @@ const EmployeeSidePanel = ({
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
-        const finalValue = type === 'checkbox' ? checked : value;
+        let finalValue = type === 'checkbox' ? checked : value;
+
+        // Forzar mayúsculas en nombres
+        if (name === 'first_name' || name === 'last_name') {
+            finalValue = finalValue.toUpperCase();
+        }
+
         setEditData(prev => ({ ...prev, [name]: finalValue }));
     };
 
