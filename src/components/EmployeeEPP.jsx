@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabaseClient';
-import { Trash2, Plus, Search, Package, ShoppingCart } from 'lucide-react';
+import { Trash2, Plus, Search, Package, ShoppingCart, Clock, CheckCircle } from 'lucide-react';
 
 const EmployeeEPP = ({ employeeId }) => {
     const [requests, setRequests] = useState([]);
@@ -10,7 +10,7 @@ const EmployeeEPP = ({ employeeId }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
     // Cart State
-    const [cart, setCart] = useState([]); // Array of { product, quantity }
+    const [cart, setCart] = useState([]);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [quantity, setQuantity] = useState(1);
 
@@ -26,9 +26,9 @@ const EmployeeEPP = ({ employeeId }) => {
             const { data, error } = await supabase
                 .from('material_requests')
                 .select(`
-          *,
-          product:products!inner(name, code, unit, current_stock)
-        `)
+                  *,
+                  product:products!inner(name, code, unit, current_stock)
+                `)
                 .eq('employee_id', employeeId)
                 .order('created_at', { ascending: false });
 
@@ -57,7 +57,6 @@ const EmployeeEPP = ({ employeeId }) => {
     const addToCart = () => {
         if (!selectedProduct) return;
 
-        // Check if already in cart
         const existingIndex = cart.findIndex(item => item.product.code === selectedProduct.code);
         if (existingIndex >= 0) {
             const newCart = [...cart];
@@ -67,7 +66,6 @@ const EmployeeEPP = ({ employeeId }) => {
             setCart([...cart, { product: selectedProduct, quantity }]);
         }
 
-        // Reset inputs
         setSelectedProduct(null);
         setQuantity(1);
         setSearchTerm('');
@@ -89,7 +87,6 @@ const EmployeeEPP = ({ employeeId }) => {
                 product_code: item.product.code,
                 quantity: item.quantity,
                 status: 'PENDING',
-                // To group them implicitly, they will share the same created_at (approx)
             }));
 
             const { error } = await supabase.from('material_requests').insert(payloads);
@@ -131,13 +128,20 @@ const EmployeeEPP = ({ employeeId }) => {
         item.code.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    // Derived State for UI Split
+    const pendingRequests = requests.filter(r => ['PENDING', 'APPROVED'].includes(r.status));
+    const historyRequests = requests.filter(r => ['DELIVERED', 'REJECTED'].includes(r.status));
+
+    // Check if selected product is already pending
+    const isAlreadyPending = selectedProduct && pendingRequests.some(r => r.product_code === selectedProduct.code);
+
     return (
-        <div className="space-y-6">
-            {/* Header / Actions */}
+        <div className="space-y-8">
+            {/* Header */}
             <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                 <div>
                     <h3 className="font-bold text-slate-800">Dotación y EPP</h3>
-                    <p className="text-sm text-slate-500">Historial de entregas y solicitudes</p>
+                    <p className="text-sm text-slate-500">Gestión de entregas</p>
                 </div>
                 <button
                     onClick={() => setShowForm(true)}
@@ -147,16 +151,15 @@ const EmployeeEPP = ({ employeeId }) => {
                 </button>
             </div>
 
-            {/* Form Modal (Cart Interface) */}
+            {/* MODAL FORM */}
             {showForm && (
                 <div className="bg-indigo-50 p-6 rounded-xl border border-indigo-100 animate-fadeIn">
                     <div className="flex justify-between mb-4">
-                        <h4 className="font-bold text-indigo-900">Nueva Asignación de Material</h4>
+                        <h4 className="font-bold text-indigo-900">Nueva Asignación</h4>
                         <button onClick={() => setShowForm(false)} className="text-indigo-400 hover:text-indigo-700">✕</button>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* LEFT: Product Selection */}
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-xs font-bold text-indigo-800 uppercase mb-1">Buscar Item</label>
@@ -172,7 +175,6 @@ const EmployeeEPP = ({ employeeId }) => {
                                 </div>
                             </div>
 
-                            {/* Listado de items filtrados */}
                             {searchTerm && !selectedProduct && (
                                 <div className="max-h-60 overflow-y-auto bg-white rounded-lg border border-indigo-100 shadow-sm">
                                     {filteredCatalog.map(item => (
@@ -190,11 +192,19 @@ const EmployeeEPP = ({ employeeId }) => {
                             )}
 
                             {selectedProduct && (
-                                <div className="bg-white p-4 rounded-lg border border-indigo-200 shadow-sm animate-fadeIn">
+                                <div className={`bg-white p-4 rounded-lg border shadow-sm animate-fadeIn ${isAlreadyPending ? 'border-yellow-300 ring-2 ring-yellow-100' : 'border-indigo-200'}`}>
                                     <div className="mb-3">
                                         <div className="font-bold text-indigo-900">{selectedProduct.name}</div>
                                         <div className="text-xs text-indigo-500">{selectedProduct.code} - Stock: {selectedProduct.current_stock}</div>
                                     </div>
+
+                                    {isAlreadyPending && (
+                                        <div className="mb-3 bg-yellow-50 text-yellow-800 text-xs p-2 rounded border border-yellow-200 flex items-start gap-2">
+                                            <Clock size={14} className="mt-0.5" />
+                                            <span><strong>Advertencia:</strong> Este trabajador ya tiene una solicitud PENDIENTE de este producto.</span>
+                                        </div>
+                                    )}
+
                                     <div className="flex gap-2 items-end">
                                         <div className="flex-1">
                                             <label className="block text-xs text-gray-500 mb-1">Cantidad</label>
@@ -215,7 +225,6 @@ const EmployeeEPP = ({ employeeId }) => {
                                         <button
                                             onClick={() => setSelectedProduct(null)}
                                             className="text-red-500 p-2 hover:bg-red-50 rounded"
-                                            title="Cancelar"
                                         >
                                             <Trash2 size={18} />
                                         </button>
@@ -224,7 +233,6 @@ const EmployeeEPP = ({ employeeId }) => {
                             )}
                         </div>
 
-                        {/* RIGHT: Cart Summary */}
                         <div className="bg-white rounded-lg border border-indigo-100 shadow-sm flex flex-col">
                             <div className="p-3 bg-indigo-100 border-b border-indigo-200 font-bold text-indigo-800 flex items-center gap-2">
                                 <ShoppingCart size={18} /> Canasta de Entrega
@@ -233,7 +241,7 @@ const EmployeeEPP = ({ employeeId }) => {
                                 {cart.length === 0 ? (
                                     <div className="h-full flex flex-col items-center justify-center text-gray-400 p-6">
                                         <Package size={32} className="mb-2 opacity-30" />
-                                        <p className="text-sm">Agregue items para solicitar</p>
+                                        <p className="text-sm">Agregue items...</p>
                                     </div>
                                 ) : (
                                     <ul className="divide-y divide-gray-100">
@@ -260,7 +268,7 @@ const EmployeeEPP = ({ employeeId }) => {
                                     disabled={cart.length === 0 || loading}
                                     className="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold shadow hover:bg-indigo-700 disabled:opacity-50 transition-all flex justify-center items-center gap-2"
                                 >
-                                    {loading ? 'Procesando...' : `Confirmar Solicitud (${cart.length} items)`}
+                                    {loading ? 'Procesando...' : `Confirmar Solicitud (${cart.length})`}
                                 </button>
                             </div>
                         </div>
@@ -268,46 +276,93 @@ const EmployeeEPP = ({ employeeId }) => {
                 </div>
             )}
 
-            {/* Listado de Solicitudes */}
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <table className="w-full text-sm text-left">
-                    <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-xs">
-                        <tr>
-                            <th className="p-4">Fecha</th>
-                            <th className="p-4">Item</th>
-                            <th className="p-4 text-center">Cant.</th>
-                            <th className="p-4">Estado</th>
-                            <th className="p-4">Docs</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                        {requests.length > 0 ? requests.map(req => (
-                            <tr key={req.id} className="hover:bg-slate-50">
-                                <td className="p-4">{new Date(req.created_at).toLocaleDateString()}</td>
-                                <td className="p-4">
-                                    <div className="font-bold text-slate-700">{req.product?.name || req.product_code}</div>
-                                    <div className="text-xs text-slate-400">{req.product?.code}</div>
-                                </td>
-                                <td className="p-4 text-center font-mono">{req.quantity}</td>
-                                <td className="p-4">{getStatusBadge(req.status)}</td>
-                                <td className="p-4">
-                                    {req.signed_receipt_url ? (
-                                        <a href={supabase.storage.from('rrhh-files').getPublicUrl(req.signed_receipt_url).data.publicUrl} target="_blank" className="text-blue-600 hover:underline">Ver Firma</a>
-                                    ) : (
-                                        <span className="text-slate-300">-</span>
-                                    )}
-                                </td>
-                            </tr>
-                        )) : (
+            {/* SECCIÓN 1: PENDIENTES */}
+            <div className="space-y-2">
+                <h4 className="text-sm font-bold text-slate-500 uppercase flex items-center gap-2">
+                    <Clock size={16} /> Pendientes de Entrega
+                </h4>
+                <div className="bg-orange-50 rounded-xl border border-orange-200 overflow-hidden">
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-orange-100 text-orange-800 font-bold uppercase text-xs">
                             <tr>
-                                <td colSpan="5" className="p-8 text-center text-slate-400">
-                                    <Package size={48} className="mx-auto mb-2 opacity-20" />
-                                    No hay entregas registradas
-                                </td>
+                                <th className="p-3">Solicitado El</th>
+                                <th className="p-3">Item</th>
+                                <th className="p-3 text-center">Cant.</th>
+                                <th className="p-3">Estado</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-orange-100">
+                            {pendingRequests.length > 0 ? pendingRequests.map(req => (
+                                <tr key={req.id} className="hover:bg-orange-100/50">
+                                    <td className="p-3">{new Date(req.created_at).toLocaleDateString()}</td>
+                                    <td className="p-3">
+                                        <div className="font-bold text-slate-700">{req.product?.name}</div>
+                                        <div className="text-xs text-slate-500">{req.product?.code}</div>
+                                    </td>
+                                    <td className="p-3 text-center font-mono font-bold">{req.quantity}</td>
+                                    <td className="p-3">{getStatusBadge(req.status)}</td>
+                                </tr>
+                            )) : (
+                                <tr>
+                                    <td colSpan="4" className="p-4 text-center text-slate-400 text-xs italic">
+                                        No hay entregas pendientes.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* SECCIÓN 2: HISTORIAL */}
+            <div className="space-y-2">
+                <h4 className="text-sm font-bold text-slate-500 uppercase flex items-center gap-2">
+                    <CheckCircle size={16} /> Historial de Entregas
+                </h4>
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-xs">
+                            <tr>
+                                <th className="p-3">Fecha Entrega</th>
+                                <th className="p-3">Item</th>
+                                <th className="p-3 text-center">Cant.</th>
+                                <th className="p-3">Estado</th>
+                                <th className="p-3">Comprobante</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {historyRequests.length > 0 ? historyRequests.map(req => (
+                                <tr key={req.id} className="hover:bg-slate-50">
+                                    <td className="p-3">{new Date(req.processed_at || req.created_at).toLocaleDateString()}</td>
+                                    <td className="p-3">
+                                        <div className="font-bold text-slate-700">{req.product?.name}</div>
+                                        <div className="text-xs text-slate-400">{req.product?.code}</div>
+                                    </td>
+                                    <td className="p-3 text-center font-mono">{req.quantity}</td>
+                                    <td className="p-3">{getStatusBadge(req.status)}</td>
+                                    <td className="p-3">
+                                        {req.signed_receipt_url ? (
+                                            <a href={supabase.storage.from('rrhh-files').getPublicUrl(req.signed_receipt_url).data.publicUrl} target="_blank" className="text-blue-600 hover:underline font-medium">
+                                                Ver Firma
+                                            </a>
+                                        ) : (
+                                            <span className="text-slate-300">-</span>
+                                        )}
+                                    </td>
+                                </tr>
+                            )) : (
+                                <tr>
+                                    <td colSpan="5" className="p-6 text-center text-slate-400">
+                                        <div className="flex flex-col items-center">
+                                            <Package size={32} className="mb-2 opacity-20" />
+                                            No hay historial disponible
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
