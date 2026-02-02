@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../services/supabaseClient';
+import { supabase } from '../services/supabaseClient'; // Mantener por si se usa para auth u otra cosa
+import { procurementClient } from '../services/procurementClient'; // Nuevo cliente
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -12,14 +13,13 @@ const SubcontractorSettings = () => {
   const [formData, setFormData] = useState({
     rut: '', business_name: '', legal_representative: '', contact_email: ''
   });
-  // const [organizationId, setOrganizationId] = useState(null);
 
   // --- Carga de Datos ---
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      // 2. Obtener Subcontratistas desde Proveedores (subcontrato = 1)
-      const { data, error } = await supabase
+      // 2. Obtener Subcontratistas desde Proveedores (DB Externa)
+      const { data, error } = await procurementClient
         .from('proveedores')
         .select('*')
         .eq('subcontrato', 1)
@@ -43,12 +43,12 @@ const SubcontractorSettings = () => {
     e.preventDefault();
 
     try {
-      // Insertar en tabla proveedores con subcontrato = 1
-      const { error } = await supabase.from('proveedores').insert({
+      // Insertar en tabla proveedores (DB Externa)
+      const { error } = await procurementClient.from('proveedores').insert({
         rut: formData.rut,
-        nombre: formData.business_name, // Mapeo: business_name -> nombre
-        contacto: formData.legal_representative, // Mapeo: legal_representative -> contacto
-        correo: formData.contact_email, // Mapeo: contact_email -> correo
+        nombre: formData.business_name,
+        contacto: formData.legal_representative,
+        correo: formData.contact_email,
         subcontrato: 1
       });
 
@@ -69,8 +69,8 @@ const SubcontractorSettings = () => {
     if (!window.confirm("¿Quitar marca de subcontrato? El proveedor seguirá existiendo pero no aparecerá aquí.")) return;
 
     try {
-      // Solo quitamos la marca de subcontrato, no borramos el proveedor
-      const { error } = await supabase.from('proveedores').update({ subcontrato: 0 }).eq('id', id);
+      // DB Externa
+      const { error } = await procurementClient.from('proveedores').update({ subcontrato: 0 }).eq('id', id);
       if (error) throw error;
       fetchData();
     } catch (error) {

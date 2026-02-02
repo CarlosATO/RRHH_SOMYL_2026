@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../services/supabaseClient';
+import { procurementClient } from '../services/procurementClient';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { usePendingRequests } from '../hooks/usePendingRequests';
@@ -640,7 +641,7 @@ const EmployeeList = () => {
                 supabase.from('rrhh_pension_providers').select('*'),
                 supabase.from('rrhh_health_providers').select('*'),
                 supabase.from('rrhh_contract_types').select('*'),
-                supabase.from('proveedores').select('*').eq('subcontrato', 1),
+                procurementClient.from('proveedores').select('*').eq('subcontrato', 1),
                 supabase.from('rrhh_course_catalog').select('*'),
                 supabase.from('rrhh_turnos').select('*')
             ]);
