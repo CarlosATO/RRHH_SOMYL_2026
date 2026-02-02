@@ -30,8 +30,9 @@ const AttendanceControl = () => {
         try {
             setLoading(true);
             const [year, month] = selectedMonth.split('-');
+            const lastDay = new Date(year, month, 0).getDate(); // Obtener último día del mes
             const startDate = `${year}-${month}-01`;
-            const endDate = `${year}-${month}-31`;
+            const endDate = `${year}-${month}-${lastDay}`;
 
             const { data, error } = await supabase
                 .from('v_daily_attendance')
