@@ -9,7 +9,20 @@ const OrgChart = () => {
     const [loading, setLoading] = useState(true);
 
     // Transformar datos planos a jerarquía (Árbol)
-    const buildTree = (employees) => {
+    const buildTree = (rawEmployees) => {
+        // 1. Pre-procesar empleados: Resetear hijos y formatear nombres
+        // Usamos map para crear una copia limpia y asegurar que todos tengan .children = []
+        const employees = rawEmployees.map(e => ({
+            ...e,
+            name: `${e.first_name} ${e.last_name}`,
+            attributes: {
+                Cargo: e.job?.name || 'Sin Cargo',
+                Depto: e.department?.name || ''
+            },
+            children: []
+        }));
+
+        // 2. Crear mapa de ID -> Índice
         const idMapping = employees.reduce((acc, el, i) => {
             acc[el.id] = i;
             return acc;
@@ -17,19 +30,13 @@ const OrgChart = () => {
 
         let roots = [];
 
-        // Mapeo de hijos
+        // 3. Construir enlaces
         employees.forEach((el) => {
-            el.name = `${el.first_name} ${el.last_name}`;
-            el.attributes = {
-                Cargo: el.job?.name || 'Sin Cargo',
-                Depto: el.department?.name || ''
-            };
-            el.children = []; // Inicializar array de hijos
-
             if (!el.supervisor_id) {
                 roots.push(el);
             } else {
                 const parentIndex = idMapping[el.supervisor_id];
+                // Verificar que el padre exista y tenga children inicializado (que siempre debería ser true ahora)
                 if (employees[parentIndex]) {
                     employees[parentIndex].children.push(el);
                 } else {
@@ -41,6 +48,10 @@ const OrgChart = () => {
 
         // Si hay múltiples raíces (varios gerentes o nodos sueltos), crear un nodo "Empresa" ficticio
         if (roots.length === 1) return roots[0];
+
+        // Si no hay nadie, retornar null
+        if (roots.length === 0) return null;
+
         return {
             name: 'SOMYL S.A.',
             attributes: { Tipo: 'Organización' },
