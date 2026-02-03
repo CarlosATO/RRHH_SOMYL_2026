@@ -366,7 +366,7 @@ const EmployeeEPP = ({ employeeId }) => {
                                     <td className="p-3">{getStatusBadge(req.status)}</td>
                                     <td className="p-3">
                                         {req.signed_receipt_url ? (
-                                            <a href={supabase.storage.from('rrhh-files').getPublicUrl(req.signed_receipt_url).data.publicUrl} target="_blank" className="text-blue-600 hover:underline font-medium">
+                                            <a href={supabase.storage.from('documents').getPublicUrl(req.signed_receipt_url).data.publicUrl} target="_blank" className="text-blue-600 hover:underline font-medium">
                                                 Ver Firma
                                             </a>
                                         ) : (
