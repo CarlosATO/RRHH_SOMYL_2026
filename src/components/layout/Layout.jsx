@@ -12,7 +12,7 @@ const Layout = ({ children }) => {
             <Sidebar isOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 
             {/* Main Content Wrapper */}
-            <div className="lg:ml-64 min-h-screen flex flex-col transition-all duration-300">
+            <div className="lg:ml-20 min-h-screen flex flex-col transition-all duration-300">
 
                 {/* Topbar */}
                 <header className="h-16 bg-white border-b border-slate-200 shadow-sm sticky top-0 z-30 px-4 md:px-8 flex items-center justify-between">
@@ -51,7 +51,7 @@ const Layout = ({ children }) => {
                 </header>
 
                 {/* Page Content */}
-                <main className="flex-1 p-4 md:p-8 overflow-x-hidden">
+                <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
                     {children}
                 </main>
             </div>
