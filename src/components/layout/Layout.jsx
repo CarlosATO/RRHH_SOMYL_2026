@@ -23,9 +23,14 @@ const Layout = ({ children }) => {
                         >
                             <Menu size={24} className="text-slate-700" />
                         </button>
-                        <h2 className="text-xl font-bold text-slate-800 hidden md:block">
-                            Recursos Humanos
-                        </h2>
+                        <div className="flex flex-col">
+                            <h2 className="text-lg font-bold text-slate-800 hidden md:block leading-none">
+                                Recursos Humanos
+                            </h2>
+                            <p className="text-[10px] text-slate-500 font-medium hidden md:block mt-0.5 uppercase tracking-wide">
+                                {new Date().toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })}
+                            </p>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-4">

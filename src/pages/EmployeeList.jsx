@@ -110,7 +110,7 @@ const EmployeeList = () => {
 
             const { data: emps, error } = await supabase
                 .from('rrhh_employees')
-                .select(`*, job:job_id(name)`)
+                .select(`*, job:job_id(name), department:department_id(name)`)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -234,7 +234,7 @@ const EmployeeList = () => {
                                         <td className="px-4 py-3">
                                             <div className="flex flex-col">
                                                 <span className="text-xs font-medium text-slate-700">{e.job?.name || '-'}</span>
-                                                <span className="text-[10px] text-slate-400">Departamento TBD</span>
+                                                <span className="text-[10px] text-slate-400">{e.department?.name || 'Depto. sin asignar'}</span>
                                             </div>
                                         </td>
                                         <td className="px-4 py-3 text-center">

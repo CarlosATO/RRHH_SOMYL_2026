@@ -10,7 +10,8 @@ import {
     Save,
     X,
     MessageSquare,
-    CheckCircle2
+    CheckCircle2,
+    Filter
 } from 'lucide-react';
 
 const PerformanceReviews = () => {
@@ -37,11 +38,11 @@ const PerformanceReviews = () => {
     const [saving, setSaving] = useState(false);
 
     const skillsList = [
-        { id: 'responsibility', label: 'Responsabilidad y Puntualidad' },
-        { id: 'quality', label: 'Calidad del Trabajo' },
-        { id: 'teamwork', label: 'Trabajo en Equipo' },
-        { id: 'proactivity', label: 'Iniciativa' },
-        { id: 'compliance', label: 'Cumplimiento de Normas' }
+        { id: 'responsibility', label: 'Responsabilidad' },
+        { id: 'quality', label: 'Calidad' },
+        { id: 'teamwork', label: 'Equipo' },
+        { id: 'proactivity', label: 'Proactividad' },
+        { id: 'compliance', label: 'Normas' }
     ];
 
     useEffect(() => {
@@ -52,10 +53,10 @@ const PerformanceReviews = () => {
         try {
             setLoading(true);
 
-            // 1. Cargar empleados activos
+            // 1. Cargar empleados activos con relaciones
             const { data: emps, error: empError } = await supabase
                 .from('rrhh_employees')
-                .select('*')
+                .select('*, job:job_id(name), department:department_id(name)')
                 .order('last_name');
 
             if (empError) throw empError;
@@ -79,11 +80,9 @@ const PerformanceReviews = () => {
     };
 
     const handleOpenReview = (employee) => {
-        // Verificar si ya existe evaluación
         const existingReview = reviews.find(r => r.employee_id === employee.id);
-
         if (existingReview) {
-            alert("Este empleado ya tiene una evaluación en este periodo. Edición no implementada en MVP.");
+            alert("Empleado ya evaluado en este periodo.");
             return;
         }
 
@@ -94,25 +93,22 @@ const PerformanceReviews = () => {
     };
 
     const handleSaveReview = async () => {
-        // Validar que todos los campos tengan calificación
         const values = Object.values(ratings);
         if (values.some(v => v === 0)) {
-            alert("Por favor califica todos los criterios antes de guardar.");
+            alert("Califica todos los criterios.");
             return;
         }
 
         setSaving(true);
         try {
-            // Calcular promedio
             const sum = values.reduce((a, b) => a + b, 0);
             const average = (sum / values.length).toFixed(1);
 
-            // 1. Insertar Cabecera
             const { data: reviewData, error: reviewError } = await supabase
                 .from('rrhh_evaluations')
                 .insert({
                     employee_id: selectedEmployee.id,
-                    reviewer_id: user.id, // OJO: Verificar si user.id mapea a usuarios_sso.id o auth.users.id
+                    reviewer_id: user.id,
                     period: period,
                     status: 'completed',
                     final_score: average,
@@ -123,7 +119,6 @@ const PerformanceReviews = () => {
 
             if (reviewError) throw reviewError;
 
-            // 2. Insertar Detalle de Skills
             const skillsToInsert = skillsList.map(skill => ({
                 evaluation_id: reviewData.id,
                 skill_name: skill.label,
@@ -136,13 +131,11 @@ const PerformanceReviews = () => {
 
             if (skillsError) throw skillsError;
 
-            alert('Evaluación guardada exitosamente!');
             setReviewModalOpen(false);
-            fetchData(); // Recargar para actualizar estados de botones
+            fetchData();
 
         } catch (error) {
-            console.error('Error guardando evaluación:', error);
-            alert('Error al guardar: ' + error.message);
+            alert('Error: ' + error.message);
         } finally {
             setSaving(false);
         }
@@ -156,187 +149,155 @@ const PerformanceReviews = () => {
     );
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Evaluaciones de Desempeño</h1>
-                    <p className="text-slate-500 mt-1">Gestiona el rendimiento y feedback del personal</p>
+        <div className="space-y-4 animate-in fade-in duration-500 max-w-7xl mx-auto font-sans">
+            {/* Header Compacto */}
+            <div className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-slate-100">
+                <div className="flex items-center gap-3">
+                    <div className="bg-amber-50 p-2 rounded-lg text-amber-600">
+                        <Award size={20} />
+                    </div>
+                    <div>
+                        <h1 className="text-base font-bold text-slate-800 leading-tight">Evaluaciones</h1>
+                        <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Gestión de Desempeño</p>
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-slate-200">
-                    <Calendar size={20} className="text-slate-400 ml-2" />
-                    <select
-                        value={period}
-                        onChange={(e) => setPeriod(e.target.value)}
-                        className="bg-transparent border-none text-sm font-bold text-slate-700 focus:ring-0 cursor-pointer"
-                    >
-                        <option value="2026-Q1">2026 - Trimestre 1</option>
-                        <option value="2026-Q2">2026 - Trimestre 2</option>
-                        <option value="2026-Q3">2026 - Trimestre 3</option>
-                        <option value="2026-Q4">2026 - Trimestre 4</option>
-                    </select>
+                <div className="flex items-center gap-2">
+                    {/* Period Selector Compact */}
+                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-200">
+                        <Calendar size={14} className="text-slate-400" />
+                        <select
+                            value={period}
+                            onChange={(e) => setPeriod(e.target.value)}
+                            className="bg-transparent border-none text-xs font-bold text-slate-700 focus:ring-0 cursor-pointer py-0 pl-0 pr-6 h-auto"
+                        >
+                            <option value="2026-Q1">2026 - Q1</option>
+                            <option value="2026-Q2">2026 - Q2</option>
+                            <option value="2026-Q3">2026 - Q3</option>
+                            <option value="2026-Q4">2026 - Q4</option>
+                        </select>
+                    </div>
+
+                    {/* Search Compact */}
+                    <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                        <input
+                            type="text"
+                            placeholder="Buscar..."
+                            className="w-48 pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md focus:ring-1 focus:ring-blue-500 text-xs shadow-sm"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
                 </div>
             </div>
 
-            {/* Buscador */}
-            <div className="relative max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                <input
-                    type="text"
-                    placeholder="Buscar empleado por nombre o RUT..."
-                    className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm shadow-sm"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-            </div>
-
-            {/* Grid de Empleados */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Grid de Empleados Compacto (Estilo Dashboard) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {filteredEmployees.map(emp => {
                     const review = reviews.find(r => r.employee_id === emp.id);
                     return (
-                        <div key={emp.id} className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col items-center text-center">
-                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-2xl font-bold text-blue-700 mb-4 border-4 border-white shadow-sm">
-                                {emp.first_name[0]}{emp.last_name[0]}
+                        <div key={emp.id} className="bg-white rounded-lg p-3 border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex items-center justify-between gap-3 group">
+
+                            {/* Avatar & Info */}
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-10 h-10 rounded-full bg-slate-100 flex-none flex items-center justify-center text-xs font-bold text-slate-500 border border-slate-200 group-hover:border-blue-200 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                                    {emp.first_name[0]}{emp.last_name[0]}
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="font-bold text-slate-800 text-xs truncate leading-tight">
+                                        {emp.first_name} {emp.last_name}
+                                    </h3>
+                                    <p className="text-[10px] text-slate-400 truncate font-medium">
+                                        {emp.job?.name || 'Sin cargo'}
+                                    </p>
+                                </div>
                             </div>
 
-                            <h3 className="font-bold text-slate-900 text-lg">{emp.first_name} {emp.last_name}</h3>
-                            <p className="text-sm text-slate-500 mb-6">{emp.job?.name || 'Cargo sin definir'}</p>
-
-                            {review ? (
-                                <div className="mt-auto w-full">
-                                    <div className="flex items-center justify-center gap-2 mb-3">
-                                        <div className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold flex items-center gap-1">
-                                            <CheckCircle2 size={12} /> Evaluado
-                                        </div>
-                                        <div className="flex items-center text-amber-500 font-bold">
-                                            <span className="text-lg mr-1">{review.final_score}</span>
-                                            <Star size={16} fill="currentColor" />
+                            {/* Action / Status */}
+                            <div className="flex-none">
+                                {review ? (
+                                    <div className="flex flex-col items-end">
+                                        <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-100">
+                                            <CheckCircle2 size={10} />
+                                            <span>{review.final_score}</span>
                                         </div>
                                     </div>
+                                ) : (
                                     <button
-                                        className="w-full py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50 transition-colors"
-                                        disabled
+                                        onClick={() => handleOpenReview(emp)}
+                                        className="p-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                                        title="Evaluar"
                                     >
-                                        Ver Detalles
+                                        <Award size={16} />
                                     </button>
-                                </div>
-                            ) : (
-                                <button
-                                    onClick={() => handleOpenReview(emp)}
-                                    className="mt-auto w-full py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md flex items-center justify-center gap-2"
-                                >
-                                    <Award size={18} />
-                                    Evaluar Desempeño
-                                </button>
-                            )}
+                                )}
+                            </div>
                         </div>
                     );
                 })}
             </div>
 
-            {/* Modal de Evaluación */}
+            {/* Modal - Mantenido funcional pero ajustado visualmente */}
             {reviewModalOpen && selectedEmployee && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full flex flex-col max-h-[90vh]">
-
-                        {/* Modal Header */}
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-start">
-                            <div className="flex gap-4 items-center">
-                                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold">
-                                    {selectedEmployee.first_name[0]}{selectedEmployee.last_name[0]}
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full flex flex-col border border-slate-200">
+                        {/* Header */}
+                        <div className="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-xl">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-700 shadow-sm">
+                                    {selectedEmployee.first_name[0]}
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold text-slate-900">Nueva Evaluación</h2>
-                                    <p className="text-sm text-slate-500">
-                                        {selectedEmployee.first_name} {selectedEmployee.last_name} • {period}
-                                    </p>
+                                    <h2 className="text-sm font-bold text-slate-800">Evaluar Desempeño</h2>
+                                    <p className="text-xs text-slate-500">{selectedEmployee.first_name} {selectedEmployee.last_name}</p>
                                 </div>
                             </div>
-                            <button onClick={() => setReviewModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                                <X size={24} />
+                            <button onClick={() => setReviewModalOpen(false)} className="text-slate-400 hover:text-slate-600 bg-white p-1 rounded-full border border-slate-200 hover:border-slate-300 transition-colors">
+                                <X size={16} />
                             </button>
                         </div>
 
-                        {/* Average Score Indicator */}
-                        <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                            <span className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Promedio Actual</span>
-                            <div className="flex items-center gap-2">
-                                <span className={`text-2xl font-bold ${Object.values(ratings).reduce((a, b) => a + b, 0) / 5 >= 4 ? 'text-emerald-600' :
-                                        (Object.values(ratings).reduce((a, b) => a + b, 0) / 5 >= 3 ? 'text-amber-500' : 'text-red-500')
-                                    }`}>
-                                    {(Object.values(ratings).reduce((a, b) => a + b, 0) / 5).toFixed(1)}
-                                </span>
-                                <Star size={20} className="text-amber-400" fill="currentColor" />
-                            </div>
-                        </div>
-
-                        {/* Modal Body */}
-                        <div className="p-6 overflow-y-auto space-y-6">
-
-                            {/* Skills Section */}
-                            <div className="space-y-4">
-                                <h3 className="font-semibold text-slate-900 flex items-center gap-2">
-                                    <Star size={18} className="text-amber-500" />
-                                    Criterios de Evaluación
-                                </h3>
-
-                                <div className="space-y-3">
-                                    {skillsList.map(skill => (
-                                        <div key={skill.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 rounded-xl gap-3">
-                                            <span className="font-medium text-slate-700">{skill.label}</span>
-                                            <div className="flex gap-1">
-                                                {[1, 2, 3, 4, 5].map(star => (
-                                                    <button
-                                                        key={star}
-                                                        onClick={() => setRatings(prev => ({ ...prev, [skill.id]: star }))}
-                                                        className={`p-1 transition-all hover:scale-110 ${ratings[skill.id] >= star ? 'text-amber-400' : 'text-slate-300'}`}
-                                                    >
-                                                        <Star size={24} fill={ratings[skill.id] >= star ? "currentColor" : "none"} />
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Feedback Section */}
+                        {/* Body */}
+                        <div className="p-5 space-y-5">
                             <div className="space-y-3">
-                                <h3 className="font-semibold text-slate-900 flex items-center gap-2">
-                                    <MessageSquare size={18} className="text-blue-500" />
-                                    Feedback General
-                                </h3>
-                                <textarea
-                                    value={feedback}
-                                    onChange={(e) => setFeedback(e.target.value)}
-                                    placeholder="Ingrese comentarios sobre el desempeño general..."
-                                    className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm resize-none"
-                                />
+                                {skillsList.map(skill => (
+                                    <div key={skill.id} className="flex items-center justify-between">
+                                        <span className="text-xs font-semibold text-slate-600 w-32 truncate" title={skill.label}>{skill.label}</span>
+                                        <div className="flex gap-1.5 bg-slate-50 p-1 rounded-lg border border-slate-100">
+                                            {[1, 2, 3, 4, 5].map(star => (
+                                                <button
+                                                    key={star}
+                                                    onClick={() => setRatings(prev => ({ ...prev, [skill.id]: star }))}
+                                                    className={`transition-transform hover:scale-110 ${ratings[skill.id] >= star ? 'text-amber-400 drop-shadow-sm' : 'text-slate-200'}`}
+                                                >
+                                                    <Star size={18} fill={ratings[skill.id] >= star ? "currentColor" : "none"} />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
 
+                            <textarea
+                                value={feedback}
+                                onChange={(e) => setFeedback(e.target.value)}
+                                placeholder="Escribe un comentario breve..."
+                                className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-1 focus:ring-blue-500 text-xs resize-none placeholder:text-slate-400"
+                            />
                         </div>
 
-                        {/* Modal Footer */}
-                        <div className="p-6 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl flex justify-end gap-3">
-                            <button
-                                onClick={() => setReviewModalOpen(false)}
-                                className="px-5 py-2.5 text-slate-600 font-medium hover:bg-slate-100 rounded-xl transition-colors"
-                            >
+                        {/* Footer */}
+                        <div className="p-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50/80 rounded-b-xl">
+                            <button onClick={() => setReviewModalOpen(false)} className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200 rounded-lg transition-all">
                                 Cancelar
                             </button>
                             <button
                                 onClick={handleSaveReview}
                                 disabled={saving}
-                                className="px-5 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 shadow-sm transition-all flex items-center gap-2 disabled:opacity-50"
                             >
-                                {saving ? 'Guardando...' : (
-                                    <>
-                                        <Save size={18} />
-                                        Guardar Evaluación
-                                    </>
-                                )}
+                                <Save size={14} /> Guardar
                             </button>
                         </div>
                     </div>
