@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import * as XLSX from 'xlsx';
 import { supabase } from '../services/supabaseClient';
 
-const CapacityDashboard = () => {
+const CapacityDashboard = ({ onRowClick }) => {
     const [employees, setEmployees] = useState([]);
     const [courses, setCourses] = useState([]);
     const [certs, setCerts] = useState([]);
@@ -119,19 +120,54 @@ const CapacityDashboard = () => {
 
     const renderStatusCell = (status) => (
         <div className="inline-flex items-center gap-1 justify-center px-2 py-1 rounded text-xs">
-            <span className={`inline-block w-2 h-2 rounded-full ${
-                status.color === 'green' ? 'bg-emerald-500' : 
+            <span className={`inline-block w-2 h-2 rounded-full ${status.color === 'green' ? 'bg-emerald-500' :
                 status.color === 'yellow' ? 'bg-yellow-400' : 'bg-red-500'
-            }`}></span>
-            <span className={`font-medium ${
-                status.color === 'green' ? 'text-emerald-700' : 
+                }`}></span>
+            <span className={`font-medium ${status.color === 'green' ? 'text-emerald-700' :
                 status.color === 'yellow' ? 'text-yellow-700' : 'text-red-700'
-            }`}>{status.label}</span>
+                }`}>{status.label}</span>
         </div>
     );
 
+    const handleExport = () => {
+        const data = employees.map(emp => {
+            const row = {
+                "Trabajador": `${emp.first_name} ${emp.last_name}`,
+                "RUT": emp.rut || '',
+                "Cargo": emp.job?.name || '',
+                "Tipo Contrato": emp.contract_type?.name || '',
+                "Vigencia Contrato": emp.termination_date || 'Indefinido',
+                "Nacionalidad": emp.nationality || '',
+                "AFP": emp.pension?.name || '',
+                "Salud": emp.health?.name || '',
+                "Estado Civil": emp.marital_status?.name || ''
+            };
+
+            courses.forEach(c => {
+                const st = getCourseStatus(emp.id, c.id);
+                row[c.name] = st.label;
+            });
+
+            return row;
+        });
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Capacidad Operativa");
+        XLSX.writeFile(wb, "Capacidad_Operativa_Somyl.xlsx");
+    };
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
+            <div className="flex justify-end">
+                <button
+                    onClick={handleExport}
+                    className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 font-bold text-sm shadow-sm transition-colors"
+                >
+                    <span className="text-lg">📊</span>
+                    Exportar Excel
+                </button>
+            </div>
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-auto">
                 <table className="w-full min-w-[1800px]">
                     <thead>
@@ -150,7 +186,7 @@ const CapacityDashboard = () => {
                                 Cursos y Certificaciones
                             </th>
                         </tr>
-                        
+
                         {/* Encabezados de columnas */}
                         <tr className="bg-slate-50/50 border-b border-slate-200">
                             {/* Info Personal */}
@@ -158,18 +194,18 @@ const CapacityDashboard = () => {
                             <th className="px-3 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">RUT</th>
                             <th className="px-3 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Cargo</th>
                             <th className="px-3 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider border-r-2 border-slate-300">Foto</th>
-                            
+
                             {/* Datos Contractuales */}
                             <th className="px-3 py-3 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">Contrato</th>
                             <th className="px-3 py-3 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tipo</th>
                             <th className="px-3 py-3 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider border-r-2 border-slate-300">Vigencia</th>
-                            
+
                             {/* Datos Complementarios */}
                             <th className="px-3 py-3 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">Nacionalidad</th>
                             <th className="px-3 py-3 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">AFP</th>
                             <th className="px-3 py-3 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">Isapre/Fonasa</th>
                             <th className="px-3 py-3 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider border-r-2 border-slate-300">Est. Civil</th>
-                            
+
                             {/* Cursos dinámicos */}
                             {courses.map(c => (
                                 <th key={c.id} className="px-3 py-3 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider border-l border-slate-200">
@@ -199,42 +235,42 @@ const CapacityDashboard = () => {
                                     </td>
                                     <td className="px-3 py-3 text-xs text-slate-600">{emp.rut || '-'}</td>
                                     <td className="px-3 py-3 text-xs text-slate-600">{emp.job?.name || '-'}</td>
-                                    <td className="px-3 py-3 text-center border-r-2 border-slate-300">
+                                    <td className="px-3 py-3 text-center border-r-2 border-slate-300 cursor-pointer hover:bg-slate-100" onClick={() => onRowClick && onRowClick(emp, 'personal')}>
                                         {renderStatusCell(getFieldStatus(emp.photo_url, 'foto'))}
                                     </td>
-                                    
+
                                     {/* Datos Contractuales */}
-                                    <td className="px-3 py-3 text-center">
+                                    <td className="px-3 py-3 text-center cursor-pointer hover:bg-slate-100" onClick={() => onRowClick && onRowClick(emp, 'contract')}>
                                         {renderStatusCell(getContractStatus(emp))}
                                     </td>
-                                    <td className="px-3 py-3 text-xs text-slate-600 text-center">
+                                    <td className="px-3 py-3 text-xs text-slate-600 text-center cursor-pointer hover:bg-slate-100" onClick={() => onRowClick && onRowClick(emp, 'contract')}>
                                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-medium bg-slate-100 text-slate-700">
                                             {emp.contract_type?.name || 'N/A'}
                                         </span>
                                     </td>
-                                    <td className="px-3 py-3 text-xs text-slate-600 text-center border-r-2 border-slate-300">
+                                    <td className="px-3 py-3 text-xs text-slate-600 text-center border-r-2 border-slate-300 cursor-pointer hover:bg-slate-100" onClick={() => onRowClick && onRowClick(emp, 'contract')}>
                                         {emp.termination_date || 'Indefinido'}
                                     </td>
-                                    
+
                                     {/* Datos Complementarios */}
-                                    <td className="px-3 py-3 text-center">
+                                    <td className="px-3 py-3 text-center cursor-pointer hover:bg-slate-100" onClick={() => onRowClick && onRowClick(emp, 'personal')}>
                                         {renderStatusCell(getFieldStatus(emp.nationality, 'nacionalidad'))}
                                     </td>
-                                    <td className="px-3 py-3 text-center">
+                                    <td className="px-3 py-3 text-center cursor-pointer hover:bg-slate-100" onClick={() => onRowClick && onRowClick(emp, 'social')}>
                                         {renderStatusCell(getFieldStatus(emp.pension?.name, 'AFP'))}
                                     </td>
-                                    <td className="px-3 py-3 text-center">
+                                    <td className="px-3 py-3 text-center cursor-pointer hover:bg-slate-100" onClick={() => onRowClick && onRowClick(emp, 'social')}>
                                         {renderStatusCell(getFieldStatus(emp.health?.name, 'salud'))}
                                     </td>
-                                    <td className="px-3 py-3 text-center border-r-2 border-slate-300">
+                                    <td className="px-3 py-3 text-center border-r-2 border-slate-300 cursor-pointer hover:bg-slate-100" onClick={() => onRowClick && onRowClick(emp, 'personal')}>
                                         {renderStatusCell(getFieldStatus(emp.marital_status?.name, 'est. civil'))}
                                     </td>
-                                    
+
                                     {/* Cursos dinámicos */}
                                     {courses.map(course => {
                                         const st = getCourseStatus(emp.id, course.id);
                                         return (
-                                            <td key={course.id} className="px-3 py-3 text-center border-l border-slate-200">
+                                            <td key={course.id} className="px-3 py-3 text-center border-l border-slate-200 cursor-pointer hover:bg-slate-100" onClick={() => onRowClick && onRowClick(emp, 'acred')}>
                                                 {renderStatusCell(st)}
                                             </td>
                                         );

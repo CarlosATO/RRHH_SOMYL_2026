@@ -28,25 +28,113 @@ const Dashboard = () => {
     });
 
     const [recentLogs, setRecentLogs] = useState([]);
-    const [pendingRequests, setPendingRequests] = useState([]);
+    const [pendingItems, setPendingItems] = useState([]);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
                 setLoading(true);
-                const today = new Date().toISOString().split('T')[0];
+                const today = new Date();
+                const todayStr = today.toISOString().split('T')[0];
 
+                // 1. Contadores Generales
                 const { count: empCount } = await supabase.from('rrhh_employees').select('*', { count: 'exact', head: true });
-                const { count: attendanceCount } = await supabase.from('rrhh_attendance_logs').select('*', { count: 'exact', head: true }).gte('timestamp', `${today}T00:00:00`).lte('timestamp', `${today}T23:59:59`).eq('type', 'IN');
+                const { count: attendanceCount } = await supabase.from('rrhh_attendance_logs').select('*', { count: 'exact', head: true }).gte('timestamp', `${todayStr}T00:00:00`).lte('timestamp', `${todayStr}T23:59:59`).eq('type', 'IN');
                 const { count: absencesCount } = await supabase.from('rrhh_employee_absences').select('*', { count: 'exact', head: true }).eq('status', 'pending');
 
                 setStats(prev => ({ ...prev, activeEmployees: empCount || 0, todayAttendance: attendanceCount || 0, pendingAbsences: absencesCount || 0 }));
 
+                // 2. Logs Recientes
                 const { data: logsData } = await supabase.from('rrhh_attendance_logs').select('*, employee:employee_id(first_name, last_name)').order('timestamp', { ascending: false }).limit(5);
                 setRecentLogs(logsData || []);
 
-                const { data: reqData } = await supabase.from('rrhh_employee_absences').select('*, employee:employee_id(first_name, last_name), type:type_id(name)').eq('status', 'pending').order('requested_at', { ascending: false }).limit(3);
-                setPendingRequests(reqData || []);
+                // 3. PENDIENTES (Lógica Unificada)
+                let items = [];
+
+                // A. Solicitudes de Ausencia
+                const { data: absences } = await supabase.from('rrhh_employee_absences').select('*, employee:employee_id(first_name, last_name), type:type_id(name)').eq('status', 'pending');
+                if (absences) {
+                    absences.forEach(a => items.push({
+                        id: `abs_${a.id}`,
+                        type: 'Solicitud Pendiente',
+                        detail: `${a.type?.name} - ${a.employee?.first_name} ${a.employee?.last_name}`,
+                        path: '/absences',
+                        severity: 'medium', // Orange
+                        date: new Date(a.requested_at)
+                    }));
+                }
+
+                // B. Empleados (Faltantes y Contratos)
+                const { data: employees } = await supabase.from('rrhh_employees').select('*, job:job_id(name)');
+                if (employees) {
+                    employees.forEach(e => {
+                        // B1. Datos Faltantes
+                        const missing = [];
+                        if (!e.rut) missing.push('RUT');
+                        if (!e.address) missing.push('Dirección');
+                        if (!e.job_id) missing.push('Cargo');
+
+                        if (missing.length > 0) {
+                            items.push({
+                                id: `miss_${e.id}`,
+                                type: 'Falta Información',
+                                detail: `${e.first_name} ${e.last_name}: ${missing.join(', ')}`,
+                                path: '/employees',
+                                severity: 'low', // Yellow/Blue
+                                date: new Date()
+                            });
+                        }
+
+                        // B2. Contrato Vencido
+                        if (e.termination_date) {
+                            const termDate = new Date(e.termination_date);
+                            if (termDate < today) {
+                                items.push({
+                                    id: `term_${e.id}`,
+                                    type: 'Contrato Vencido',
+                                    detail: `${e.first_name} ${e.last_name} (${e.termination_date})`,
+                                    path: '/employees',
+                                    severity: 'high', // Red
+                                    date: termDate
+                                });
+                            }
+                        }
+                    });
+                }
+
+                // C. Certificaciones Vencidas (Solo si existen y están vencidas)
+                const { data: certs } = await supabase.from('rrhh_employee_certifications').select('*, employee:employee_id(first_name, last_name)');
+                // Necesitamos nombres de cursos. Map simple o fetch.
+                const { data: courses } = await supabase.from('rrhh_course_catalog').select('id, name');
+                const courseMap = {};
+                if (courses) courses.forEach(c => courseMap[c.id] = c.name);
+
+                if (certs) {
+                    certs.forEach(c => {
+                        if (c.expiry_date) {
+                            const expDate = new Date(c.expiry_date);
+                            if (expDate < today) {
+                                items.push({
+                                    id: `cert_${c.id}`,
+                                    type: 'Curso Vencido',
+                                    detail: `${c.employee?.first_name} ${c.employee?.last_name}: ${courseMap[c.course_id] || 'Curso'}`,
+                                    path: '/employees',
+                                    severity: 'high', // Red
+                                    date: expDate
+                                });
+                            }
+                        }
+                    });
+                }
+
+                // Ordenar: Severidad Alta primero, luego por fecha
+                items.sort((a, b) => {
+                    const sevScore = { high: 3, medium: 2, low: 1 };
+                    if (sevScore[b.severity] !== sevScore[a.severity]) return sevScore[b.severity] - sevScore[a.severity];
+                    return b.date - a.date;
+                });
+
+                setPendingItems(items);
 
             } catch (error) {
                 console.error("Error cargando dashboard:", error);
@@ -132,32 +220,42 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* Acciones Pendientes */}
+                {/* Acciones Pendientes - NUEVO REPORTE */}
                 <div className="bg-slate-900 rounded-lg p-4 text-white shadow flex flex-col h-full relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-blue-600 rounded-full blur-2xl opacity-20 -mr-8 -mt-8 pointer-events-none"></div>
 
                     <h3 className="font-bold text-xs mb-3 flex items-center gap-2 relative z-10 uppercase tracking-wide text-blue-100">
                         <AlertCircle size={14} className="text-orange-400" />
-                        Pendientes
+                        Reporte de Pendientes
                     </h3>
 
-                    <div className="space-y-2 flex-1 relative z-10">
-                        {pendingRequests.length === 0 ? (
+                    <div className="space-y-2 flex-1 relative z-10 overflow-y-auto max-h-[300px] scrollbar-thin scrollbar-thumb-slate-700">
+                        {pendingItems.length === 0 ? (
                             <div className="text-slate-500 text-[10px] text-center py-4">
                                 <CheckCircle2 size={16} className="mx-auto mb-1 opacity-30 text-emerald-400" />
-                                <p>Todo al día</p>
+                                <p>Todo actualizado</p>
                             </div>
                         ) : (
-                            pendingRequests.map((req) => (
-                                <div key={req.id} onClick={() => navigate('/absences')} className="p-2 bg-white/5 rounded border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group">
+                            pendingItems.map((item) => (
+                                <div
+                                    key={item.id}
+                                    onClick={() => navigate(item.path)}
+                                    className={`p-2 rounded border transition-colors cursor-pointer group ${item.severity === 'high' ? 'bg-red-500/10 border-red-500/30 hover:bg-red-500/20' :
+                                            item.severity === 'medium' ? 'bg-orange-500/10 border-orange-500/30 hover:bg-orange-500/20' :
+                                                'bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20'
+                                        }`}
+                                >
                                     <div className="flex justify-between items-center mb-0.5">
-                                        <span className="text-[10px] font-bold text-orange-200 truncate">
-                                            {req.type?.name}
+                                        <span className={`text-[10px] font-bold truncate ${item.severity === 'high' ? 'text-red-300' :
+                                                item.severity === 'medium' ? 'text-orange-300' :
+                                                    'text-blue-300'
+                                            }`}>
+                                            {item.type}
                                         </span>
                                         <ArrowRight size={10} className="text-white/20 group-hover:text-white transition-colors" />
                                     </div>
-                                    <p className="text-[10px] text-slate-400 truncate">
-                                        {req.employee?.first_name} {req.employee?.last_name}
+                                    <p className="text-[10px] text-slate-400 truncate leading-tight">
+                                        {item.detail}
                                     </p>
                                 </div>
                             ))

@@ -25,12 +25,19 @@ const EmployeeDetailDrawer = ({
     uploading,
     masters,
     handleFileUpload,
-    allEmployees
+    allEmployees,
+    initialTab
 }) => {
     // If no employee is selected, render nothing
     const isOpen = !!currentEmployee;
     const isNew = currentEmployee?.isNew;
     const [activeTab, setActiveTab] = useState('personal');
+
+    React.useEffect(() => {
+        if (isOpen && initialTab) {
+            setActiveTab(initialTab);
+        }
+    }, [isOpen, initialTab]);
 
     if (!isOpen) return null;
 

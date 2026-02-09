@@ -125,12 +125,26 @@ const EmployeeList = () => {
     useEffect(() => { if (user) initData(); }, [user, initData]);
 
     // Acciones CRUD y helpers
+    const [drawerInitialTab, setDrawerInitialTab] = useState('personal');
+
     const handleOpenCreate = () => {
         setEditData({ is_subcontracted: false, hire_date: new Date().toISOString().split('T')[0] });
+        setDrawerInitialTab('personal');
         setCurrentEmployee({ isNew: true });
     };
 
-    const handleOpenEdit = (emp) => { setEditData({ ...emp }); setCurrentEmployee(emp); };
+    const handleOpenEdit = (emp) => {
+        setEditData({ ...emp });
+        setDrawerInitialTab('personal');
+        setCurrentEmployee(emp);
+    };
+
+    const handleOpenWithTab = (emp, tab = 'personal') => {
+        setEditData({ ...emp });
+        setDrawerInitialTab(tab);
+        setCurrentEmployee(emp);
+    };
+
     const handleClose = () => { setCurrentEmployee(null); setEditData({}); };
     const handleFileUpload = (file) => { setEditData(prev => ({ ...prev, photo_file: file })); };
 
@@ -206,108 +220,107 @@ const EmployeeList = () => {
             <div className="flex gap-2 border-b border-slate-200">
                 <button
                     onClick={() => setActiveTab('lista')}
-                    className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
-                        activeTab === 'lista'
-                            ? 'border-blue-600 text-blue-600'
-                            : 'border-transparent text-slate-500 hover:text-slate-700'
-                    }`}
+                    className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${activeTab === 'lista'
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-slate-500 hover:text-slate-700'
+                        }`}
                 >
                     Lista de Empleados
                 </button>
                 <button
                     onClick={() => setActiveTab('capacidad')}
-                    className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
-                        activeTab === 'capacidad'
-                            ? 'border-blue-600 text-blue-600'
-                            : 'border-transparent text-slate-500 hover:text-slate-700'
-                    }`}
+                    className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${activeTab === 'capacidad'
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-slate-500 hover:text-slate-700'
+                        }`}
                 >
                     Capacidad Operativa
                 </button>
             </div>
 
             {activeTab === 'capacidad' ? (
-                <CapacityDashboard />
+                <CapacityDashboard onRowClick={handleOpenWithTab} />
             ) : (
 
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead>
-                            <tr className="bg-slate-50/50 border-b border-slate-200">
-                                <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Empleado</th>
-                                <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Cargo</th>
-                                <th className="px-4 py-3 text-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tipo</th>
-                                <th className="px-4 py-3 text-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">Estado</th>
-                                <th className="px-4 py-3 text-right text-[11px] font-bold text-slate-500 uppercase tracking-wider">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {loading ? (
-                                <tr><td colSpan="5" className="px-6 py-12 text-center text-slate-400">Cargando base de datos...</td></tr>
-                            ) : employees.length === 0 ? (
-                                <tr><td colSpan="5" className="px-6 py-12 text-center text-slate-400">No se encontraron empleados</td></tr>
-                            ) : (
-                                employees.map(e => (
-                                    <tr key={e.id} className="hover:bg-blue-50/30 transition-colors group border-b border-slate-50 last:border-0">
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">
-                                                    {e.first_name?.[0]}{e.last_name?.[0]}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="bg-slate-50/50 border-b border-slate-200">
+                                    <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Empleado</th>
+                                    <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Cargo</th>
+                                    <th className="px-4 py-3 text-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tipo</th>
+                                    <th className="px-4 py-3 text-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">Estado</th>
+                                    <th className="px-4 py-3 text-right text-[11px] font-bold text-slate-500 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {loading ? (
+                                    <tr><td colSpan="5" className="px-6 py-12 text-center text-slate-400">Cargando base de datos...</td></tr>
+                                ) : employees.length === 0 ? (
+                                    <tr><td colSpan="5" className="px-6 py-12 text-center text-slate-400">No se encontraron empleados</td></tr>
+                                ) : (
+                                    employees.map(e => (
+                                        <tr key={e.id} className="hover:bg-blue-50/30 transition-colors group border-b border-slate-50 last:border-0">
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                                                        {e.first_name?.[0]}{e.last_name?.[0]}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-semibold text-sm text-slate-900 group-hover:text-blue-700 transition-colors">{e.first_name} {e.last_name}</div>
+                                                        <div className="text-[11px] text-slate-400 font-mono">{e.rut || 'Sin RUT'}</div>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <div className="font-semibold text-sm text-slate-900 group-hover:text-blue-700 transition-colors">{e.first_name} {e.last_name}</div>
-                                                    <div className="text-[11px] text-slate-400 font-mono">{e.rut || 'Sin RUT'}</div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-medium text-slate-700">{e.job?.name || '-'}</span>
+                                                    <span className="text-[10px] text-slate-400">{e.department?.name || 'Depto. sin asignar'}</span>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex flex-col">
-                                                <span className="text-xs font-medium text-slate-700">{e.job?.name || '-'}</span>
-                                                <span className="text-[10px] text-slate-400">{e.department?.name || 'Depto. sin asignar'}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            {e.is_subcontracted ?
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-50 text-orange-700 border border-orange-100">
-                                                    Externo
-                                                </span> :
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100">
-                                                    Planta
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                {e.is_subcontracted ?
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-50 text-orange-700 border border-orange-100">
+                                                        Externo
+                                                    </span> :
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100">
+                                                        Planta
+                                                    </span>
+                                                }
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                                    Activo
                                                 </span>
-                                            }
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                                                Activo
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                            <button
-                                                onClick={() => handleOpenEdit(e)}
-                                                className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline"
-                                            >
-                                                Ver Ficha
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-                {employees.length > 0 && (
-                    <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 text-xs text-slate-500 flex justify-between items-center">
-                        <p>Mostrando <span className="font-bold text-slate-700">{employees.length}</span> registros</p>
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                <button
+                                                    onClick={() => handleOpenEdit(e)}
+                                                    className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                                                >
+                                                    Ver Ficha
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
                     </div>
-                )}
-            </div>
+                    {employees.length > 0 && (
+                        <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 text-xs text-slate-500 flex justify-between items-center">
+                            <p>Mostrando <span className="font-bold text-slate-700">{employees.length}</span> registros</p>
+                        </div>
+                    )}
+                </div>
             )}
 
             <EmployeeDetailDrawer
                 currentEmployee={currentEmployee} editData={editData} setEditData={setEditData}
                 handleSave={handleSave} handleDelete={handleDelete} handleClose={handleClose} uploading={uploading}
                 masters={masters} handleFileUpload={handleFileUpload} allEmployees={employees}
+                initialTab={drawerInitialTab}
             />
         </div>
     );
