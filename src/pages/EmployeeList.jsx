@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { usePendingRequests } from '../hooks/usePendingRequests';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import EmployeeEPP from '../components/EmployeeEPP';
+import CapacityDashboard from './CapacityDashboard';
 
 const PORTAL_URL = import.meta.env.VITE_PORTAL_URL;
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -70,6 +71,7 @@ const EmployeeList = () => {
     const [currentEmployee, setCurrentEmployee] = useState(null);
     const [editData, setEditData] = useState({});
     const [uploading, setUploading] = useState(false);
+    const [activeTab, setActiveTab] = useState('lista');
 
     const [masters, setMasters] = useState({
         jobs: [], departments: [], maritalStatus: [], pensionProviders: [], healthProviders: [],
@@ -200,6 +202,34 @@ const EmployeeList = () => {
                 </button>
             </div>
 
+            {/* Tabs Navigation */}
+            <div className="flex gap-2 border-b border-slate-200">
+                <button
+                    onClick={() => setActiveTab('lista')}
+                    className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
+                        activeTab === 'lista'
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                    }`}
+                >
+                    Lista de Empleados
+                </button>
+                <button
+                    onClick={() => setActiveTab('capacidad')}
+                    className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
+                        activeTab === 'capacidad'
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                    }`}
+                >
+                    Capacidad Operativa
+                </button>
+            </div>
+
+            {activeTab === 'capacidad' ? (
+                <CapacityDashboard />
+            ) : (
+
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full">
@@ -272,6 +302,7 @@ const EmployeeList = () => {
                     </div>
                 )}
             </div>
+            )}
 
             <EmployeeDetailDrawer
                 currentEmployee={currentEmployee} editData={editData} setEditData={setEditData}

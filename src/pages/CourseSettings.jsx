@@ -69,7 +69,7 @@ const CourseSettings = () => {
             <div className="flex-1">
               <label className="block text-sm text-slate-700 mb-1">Nombre del Curso</label>
               <input className="w-full border p-2 rounded" placeholder="Ej: Trabajo en Altura"
-                value={newCourse.name} onChange={e => setNewCourse({ ...newCourse, name: e.target.value })} required />
+                value={newCourse.name} onChange={e => setNewCourse({ ...newCourse, name: e.target.value.toUpperCase() })} required />
             </div>
             <div className="w-32">
               <label className="block text-sm text-slate-700 mb-1">Vigencia (Meses)</label>

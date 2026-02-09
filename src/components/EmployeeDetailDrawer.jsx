@@ -38,8 +38,8 @@ const EmployeeDetailDrawer = ({
         const { name, value, type, checked } = e.target;
         let finalValue = type === 'checkbox' ? checked : value;
 
-        // Forzar mayúsculas en nombres
-        if (name === 'first_name' || name === 'last_name') {
+        // Forzar mayúsculas en nombres y dirección
+        if (['first_name', 'last_name', 'address'].includes(name)) {
             finalValue = finalValue.toUpperCase();
         }
 
@@ -248,7 +248,7 @@ const EmployeeDetailDrawer = ({
                                                         placeholder="Nombre depto..."
                                                         className="w-full border border-blue-300 rounded-md px-2 py-1.5 text-xs"
                                                         value={editData.newDeptName || ''}
-                                                        onChange={(e) => setEditData(prev => ({ ...prev, newDeptName: e.target.value }))}
+                                                        onChange={(e) => setEditData(prev => ({ ...prev, newDeptName: e.target.value.toUpperCase() }))}
                                                         onKeyDown={async (e) => {
                                                             if (e.key === 'Enter') {
                                                                 e.preventDefault();
@@ -345,7 +345,7 @@ const EmployeeDetailDrawer = ({
                                                         placeholder="Nombre Turno..."
                                                         className="w-full border border-blue-300 rounded-md px-2 py-1.5 text-xs"
                                                         value={editData.newShiftName || ''}
-                                                        onChange={(e) => setEditData(prev => ({ ...prev, newShiftName: e.target.value }))}
+                                                        onChange={(e) => setEditData(prev => ({ ...prev, newShiftName: e.target.value.toUpperCase() }))}
                                                         onKeyDown={async (e) => {
                                                             if (e.key === 'Enter') {
                                                                 e.preventDefault();
